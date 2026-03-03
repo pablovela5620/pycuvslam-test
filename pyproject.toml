@@ -1,0 +1,22 @@
+[project]
+name = "pycuvslam-test"
+version = "0.1.0"
+authors = [{name = "Pablo Vela", email = "pablovela5620@gmail.com"}]
+
+[tool.pixi.workspace]
+channels = ["https://prefix.dev/ai-demos", "https://prefix.dev/conda-forge"]
+platforms = ["linux-aarch64", "linux-64"]
+
+[tool.pixi.dependencies]
+python = "3.10.*"
+cuvslam = "==0.2.0"
+numpy = "*"
+opencv = ">=4.10,<5"
+rerun-sdk = "==0.23.2"
+scipy = "*"
+pyyaml = "*"
+jaxtyping = ">=0.3.7,<0.4"
+libstdcxx-ng = ">=14.2"
+
+[tool.pixi.tasks]
+track-robocap = "python examples/track_robocap.py --root ~/0Dev/data/robocap"
