@@ -9,6 +9,10 @@ from simplecv.rerun_log_utils import log_pinhole, log_video
 
 from pycuvslam.data.base import BaseTrackDataset
 
+# Robocap rig mesh alignment: rotation (Euler XYZ degrees) and translation offset
+ROBOCAP_MESH_EULER_XYZ_DEG = [-90, 0, -80]
+ROBOCAP_MESH_TRANSLATION = [0.0, -0.15, 0.025]
+
 
 def color_from_id(identifier: int) -> list[int]:
     """Generate pseudo-random colour from integer identifier for visualization."""
@@ -92,8 +96,8 @@ def log_rig_mesh(mesh_path: Path | None) -> None:
         return
 
     # Static transform to align mesh with rig coordinate frame
-    R = Rotation.from_euler("xyz", [-90, 0, -80], degrees=True).as_matrix()
-    rr.log("rig/mesh", rr.Transform3D(mat3x3=R, translation=[0.0, -0.15, 0.025]), static=True)
+    R = Rotation.from_euler("xyz", ROBOCAP_MESH_EULER_XYZ_DEG, degrees=True).as_matrix()
+    rr.log("rig/mesh", rr.Transform3D(mat3x3=R, translation=ROBOCAP_MESH_TRANSLATION), static=True)
     rr.log("rig/mesh", rr.Asset3D(path=mesh_path), static=True)
 
 

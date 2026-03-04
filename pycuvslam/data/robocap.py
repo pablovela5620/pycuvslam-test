@@ -130,7 +130,11 @@ class RobocapTrackDataset(BaseTrackDataset):
 
         # Rig mesh for visualization
         mesh_file: Path = cfg.root_directory / "robocap-mesh" / "3DModel.glb"
-        self._mesh_path: Path | None = mesh_file if mesh_file.exists() else None
+        if mesh_file.exists():
+            self._mesh_path: Path | None = mesh_file
+        else:
+            self._mesh_path = None
+            print(f"Rig mesh not found at {mesh_file}, mesh visualization disabled.")
 
         print(f"Stereo pairs: {selected_pairs}")
         print(f"Camera order ({len(self._cameras)} slots): {cam_order}")
