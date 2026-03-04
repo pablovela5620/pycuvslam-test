@@ -128,6 +128,10 @@ class RobocapTrackDataset(BaseTrackDataset):
         # Store for reference
         self._image_plane_distance: float = ego.image_plane_distance
 
+        # Rig mesh for visualization
+        mesh_file: Path = cfg.root_directory / "robocap-mesh" / "3DModel.glb"
+        self._mesh_path: Path | None = mesh_file if mesh_file.exists() else None
+
         print(f"Stereo pairs: {selected_pairs}")
         print(f"Camera order ({len(self._cameras)} slots): {cam_order}")
         print(f"Frames: {self._n_frames}")
@@ -166,3 +170,7 @@ class RobocapTrackDataset(BaseTrackDataset):
     @property
     def image_plane_distance(self) -> float:
         return self._image_plane_distance
+
+    @property
+    def mesh_path(self) -> Path | None:
+        return self._mesh_path
