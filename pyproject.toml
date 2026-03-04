@@ -1,22 +1,58 @@
 [project]
-name = "pycuvslam-test"
+name = "pycuvslam"
 version = "0.1.0"
 authors = [{name = "Pablo Vela", email = "pablovela5620@gmail.com"}]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pixi.workspace]
 channels = ["https://prefix.dev/ai-demos", "https://prefix.dev/conda-forge"]
 platforms = ["linux-aarch64", "linux-64"]
+
+[tool.pixi.tasks]
+track-robocap = { cmd = "python tools/track_odometry.py robocap", description = "Run multicamera visual odometry on Robocap data" }
+track-robocap-slam = { cmd = "python tools/track_slam.py robocap", description = "Run multicamera visual SLAM on Robocap data" }
+track-robocap-legacy = { cmd = "python examples/track_robocap.py", description = "Legacy: Run odometry on Robocap (for comparison)" }
 
 [tool.pixi.dependencies]
 python = "3.10.*"
 cuvslam = "==0.2.0"
 numpy = "*"
 opencv = ">=4.10,<5"
-rerun-sdk = "==0.23.2"
+rerun-sdk = ">=0.28.1,<0.29"
 scipy = "*"
 pyyaml = "*"
 jaxtyping = ">=0.3.7,<0.4"
 libstdcxx-ng = ">=14.2"
+tqdm = "*"
+pyarrow = ">=20.0.0,<21"
+pip = ">=25.1.1,<26"
+av = "*"
+pyserde = "*"
 
-[tool.pixi.tasks]
-track-robocap = "python examples/track_robocap.py --root ~/0Dev/data/robocap"
+[tool.pixi.pypi-dependencies]
+pycuvslam = { path = ".", editable = true }
+simplecv = { git = "https://github.com/pablovela5620/simplecv.git", branch = "main" }
+tyro = ">=0.9,<1"
+
+[tool.pixi.feature.dev.dependencies]
+beartype = ">=0.22.7,<0.24"
+ruff = ">=0.11,<1"
+
+[tool.pixi.environments]
+dev = ["dev"]
+
+[tool.ruff]
+line-length = 150
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "I"]
+ignore = [
+    "E501",   # Line too long
+    "F722",   # jaxtyping forward annotation false positive
+    "F821",   # jaxtyping forward annotation false positive
+    "UP037",  # Remove quotes false positive with jaxtyping
+    "UP040",  # Beartype requires TypeAlias, not PEP 695 type
+]
