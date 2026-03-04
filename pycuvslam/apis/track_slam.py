@@ -7,12 +7,20 @@ import numpy as np
 import rerun as rr
 import rerun.blueprint as rrb
 from jaxtyping import Float32, UInt8
+from scipy.spatial.transform import Rotation
 from simplecv.rerun_log_utils import RerunTyroConfig
 from tqdm.auto import tqdm
 
 from pycuvslam.configs.track_dataset_configs import AnnotatedTrackDatasetUnion
 from pycuvslam.data.base import BaseTrackDataset
-from pycuvslam.visualization import log_final_landmarks, log_frame_visuals, log_rig_mesh, log_static_cameras_and_videos
+from pycuvslam.visualization import (
+    compute_orient_transform,
+    log_final_landmarks,
+    log_frame_visuals,
+    log_orient_transform,
+    log_rig_mesh,
+    log_static_cameras_and_videos,
+)
 
 
 @dataclass
@@ -25,6 +33,8 @@ class TrackSlamConfig:
     """Dataset to track (e.g., robocap)."""
     slam_sync_mode: bool = False
     """Run SLAM in synchronous mode (slower but deterministic)."""
+    auto_orient: bool = True
+    """Gravity-align the 3D view using auto_orient_and_center_poses."""
 
 
 def main(config: TrackSlamConfig) -> None:
@@ -53,7 +63,7 @@ def main(config: TrackSlamConfig) -> None:
 
     # Set up Rerun blueprint
     cam_views = [
-        rrb.Spatial2DView(origin=f"rig/cam{i}/pinhole", name=name)
+        rrb.Spatial2DView(origin=f"world/rig/cam{i}/pinhole", name=name)
         for i, name in enumerate(dataset.cam_names)
     ]
     rr.send_blueprint(
@@ -76,8 +86,13 @@ def main(config: TrackSlamConfig) -> None:
     odom_trajectory: list[Float32[np.ndarray, "3"]] = []
     slam_trajectory: list[Float32[np.ndarray, "3"]] = []
     loop_closure_points: list[Float32[np.ndarray, "3"]] = []
+    world_from_rig_matrices: list[Float32[np.ndarray, "4 4"]] = []
     prev_lc_count: int = 0
     n_cameras: int = len(dataset.cameras)
+    rig_from_cam: np.ndarray | None = None
+    if config.auto_orient:
+        first_cam_name = dataset.cam_names[0]
+        rig_from_cam = dataset.cam_params[first_cam_name].extrinsics.world_T_cam
 
     for frame_idx in tqdm(range(dataset.n_frames), desc="SLAM Tracking"):
         images: list[UInt8[np.ndarray, "h w 3"]] = dataset.get_frame(frame_idx)
@@ -103,6 +118,13 @@ def main(config: TrackSlamConfig) -> None:
         if slam_pose is not None:
             slam_trajectory.append(slam_pose.translation)
 
+        # Collect 4x4 pose matrices for auto-orient
+        if config.auto_orient:
+            mat = np.eye(4)
+            mat[:3, :3] = Rotation.from_quat(odom_pose.rotation).as_matrix()
+            mat[:3, 3] = odom_pose.translation
+            world_from_rig_matrices.append(mat)
+
         # Loop closure detection
         current_lc_poses = tracker.get_loop_closure_poses()
         if current_lc_poses is not None and len(current_lc_poses) > prev_lc_count:
@@ -114,17 +136,17 @@ def main(config: TrackSlamConfig) -> None:
         # Re-log trajectories every 10 frames to avoid O(n^2) data transmission
         is_batch_frame: bool = frame_idx % 10 == 0 or frame_idx == dataset.n_frames - 1
         if is_batch_frame:
-            rr.log("odom_trajectory", rr.LineStrips3D(odom_trajectory, colors=[[0, 200, 255]]))
+            rr.log("world/odom_trajectory", rr.LineStrips3D(odom_trajectory, colors=[[0, 200, 255]]))
             if slam_trajectory:
-                rr.log("slam_trajectory", rr.LineStrips3D(slam_trajectory, colors=[[0, 255, 0]]))
+                rr.log("world/slam_trajectory", rr.LineStrips3D(slam_trajectory, colors=[[0, 255, 0]]))
             if loop_closure_points:
-                rr.log("loop_closures", rr.Points3D(loop_closure_points, radii=0.05, colors=[[255, 0, 0]]))
+                rr.log("world/loop_closures", rr.Points3D(loop_closure_points, radii=0.05, colors=[[255, 0, 0]]))
 
             # Pose graph visualization
             pose_graph = tracker.get_pose_graph()
             if pose_graph is not None and pose_graph.nodes:
                 node_positions = [n.node_pose.translation for n in pose_graph.nodes]
-                rr.log("pose_graph/nodes", rr.Points3D(node_positions, radii=0.02, colors=[[255, 255, 0]]))
+                rr.log("world/pose_graph/nodes", rr.Points3D(node_positions, radii=0.02, colors=[[255, 255, 0]]))
                 if pose_graph.edges:
                     node_by_id: dict[int, cuvslam.Pose] = {n.id: n.node_pose for n in pose_graph.nodes}
                     edge_segments: list[list[Float32[np.ndarray, "3"]]] = []
@@ -135,7 +157,13 @@ def main(config: TrackSlamConfig) -> None:
                                 node_by_id[edge.node_to].translation,
                             ])
                     if edge_segments:
-                        rr.log("pose_graph/edges", rr.LineStrips3D(edge_segments, colors=[[180, 180, 180]]))
+                        rr.log("world/pose_graph/edges", rr.LineStrips3D(edge_segments, colors=[[180, 180, 180]]))
+
+        # Periodically update gravity-alignment (rotation only, no centering)
+        if config.auto_orient and is_batch_frame:
+            orient_result = compute_orient_transform(world_from_rig_matrices, rig_from_cam, center=False)
+            if orient_result is not None:
+                log_orient_transform(*orient_result)
 
         log_frame_visuals(n_cameras, observations, landmarks, odom_pose)
 
@@ -157,6 +185,13 @@ def main(config: TrackSlamConfig) -> None:
                 )
 
     log_final_landmarks(tracker)
+
+    # Final orient with centering
+    if config.auto_orient and world_from_rig_matrices:
+        orient_result = compute_orient_transform(world_from_rig_matrices, rig_from_cam, center=True)
+        if orient_result is not None:
+            log_orient_transform(*orient_result)
+
     print(
         f"\nDone. Tracked {len(odom_trajectory)}/{dataset.n_frames} frames, "
         f"slam_poses={len(slam_trajectory)}, "

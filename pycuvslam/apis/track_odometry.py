@@ -7,12 +7,20 @@ import numpy as np
 import rerun as rr
 import rerun.blueprint as rrb
 from jaxtyping import Float32, UInt8
+from scipy.spatial.transform import Rotation
 from simplecv.rerun_log_utils import RerunTyroConfig
 from tqdm.auto import tqdm
 
 from pycuvslam.configs.track_dataset_configs import AnnotatedTrackDatasetUnion
 from pycuvslam.data.base import BaseTrackDataset
-from pycuvslam.visualization import log_final_landmarks, log_frame_visuals, log_rig_mesh, log_static_cameras_and_videos
+from pycuvslam.visualization import (
+    compute_orient_transform,
+    log_final_landmarks,
+    log_frame_visuals,
+    log_orient_transform,
+    log_rig_mesh,
+    log_static_cameras_and_videos,
+)
 
 
 @dataclass
@@ -23,6 +31,8 @@ class TrackOdometryConfig:
     """Rerun viewer options (spawn, save, serve, headless)."""
     dataset: AnnotatedTrackDatasetUnion
     """Dataset to track (e.g., robocap)."""
+    auto_orient: bool = True
+    """Gravity-align the 3D view using auto_orient_and_center_poses."""
 
 
 def main(config: TrackOdometryConfig) -> None:
@@ -49,7 +59,7 @@ def main(config: TrackOdometryConfig) -> None:
 
     # Set up Rerun blueprint
     cam_views = [
-        rrb.Spatial2DView(origin=f"rig/cam{i}/pinhole", name=name)
+        rrb.Spatial2DView(origin=f"world/rig/cam{i}/pinhole", name=name)
         for i, name in enumerate(dataset.cam_names)
     ]
     rr.send_blueprint(
@@ -69,7 +79,12 @@ def main(config: TrackOdometryConfig) -> None:
 
     # Tracking loop
     trajectory: list[Float32[np.ndarray, "3"]] = []
+    world_from_rig_matrices: list[Float32[np.ndarray, "4 4"]] = []
     n_cameras: int = len(dataset.cameras)
+    rig_from_cam: np.ndarray | None = None
+    if config.auto_orient:
+        first_cam_name = dataset.cam_names[0]
+        rig_from_cam = dataset.cam_params[first_cam_name].extrinsics.world_T_cam
 
     for frame_idx in tqdm(range(dataset.n_frames), desc="Tracking"):
         images: list[UInt8[np.ndarray, "h w 3"]] = dataset.get_frame(frame_idx)
@@ -91,14 +106,34 @@ def main(config: TrackOdometryConfig) -> None:
 
         trajectory.append(odom_pose.translation)
 
+        # Collect 4x4 pose matrices for auto-orient
+        if config.auto_orient:
+            mat = np.eye(4)
+            mat[:3, :3] = Rotation.from_quat(odom_pose.rotation).as_matrix()
+            mat[:3, 3] = odom_pose.translation
+            world_from_rig_matrices.append(mat)
+
         # Re-log trajectory every 10 frames to avoid O(n^2) data transmission
         is_batch_frame: bool = frame_idx % 10 == 0 or frame_idx == dataset.n_frames - 1
         if is_batch_frame:
-            rr.log("trajectory", rr.LineStrips3D(trajectory, colors=[[0, 200, 255]]))
+            rr.log("world/trajectory", rr.LineStrips3D(trajectory, colors=[[0, 200, 255]]))
+
+        # Periodically update gravity-alignment (rotation only, no centering)
+        if config.auto_orient and is_batch_frame:
+            orient_result = compute_orient_transform(world_from_rig_matrices, rig_from_cam, center=False)
+            if orient_result is not None:
+                log_orient_transform(*orient_result)
 
         log_frame_visuals(n_cameras, observations, landmarks, odom_pose)
 
     log_final_landmarks(tracker)
+
+    # Final orient with centering
+    if config.auto_orient and world_from_rig_matrices:
+        orient_result = compute_orient_transform(world_from_rig_matrices, rig_from_cam, center=True)
+        if orient_result is not None:
+            log_orient_transform(*orient_result)
+
     print(f"\nDone. Tracked {len(trajectory)}/{dataset.n_frames} frames.")
 
 
