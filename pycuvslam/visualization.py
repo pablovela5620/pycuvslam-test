@@ -4,9 +4,14 @@ from pathlib import Path
 
 import cuvslam
 import rerun as rr
+from scipy.spatial.transform import Rotation
 from simplecv.rerun_log_utils import log_pinhole, log_video
 
 from pycuvslam.data.base import BaseTrackDataset
+
+# Robocap rig mesh alignment: rotation (Euler XYZ degrees) and translation offset
+ROBOCAP_MESH_EULER_XYZ_DEG = [-90, 0, -80]
+ROBOCAP_MESH_TRANSLATION = [0.0, -0.15, 0.025]
 
 
 def color_from_id(identifier: int) -> list[int]:
@@ -79,6 +84,21 @@ def log_frame_visuals(
             f"rig/cam{i}/pinhole/observations",
             rr.Points2D(obs_uv, radii=5, colors=obs_colors),
         )
+
+
+def log_rig_mesh(mesh_path: Path | None) -> None:
+    """Log a GLB mesh asset under the rig entity so it follows the rig pose.
+
+    Args:
+        mesh_path: Path to the GLB mesh file, or None to skip.
+    """
+    if mesh_path is None:
+        return
+
+    # Static transform to align mesh with rig coordinate frame
+    R = Rotation.from_euler("xyz", ROBOCAP_MESH_EULER_XYZ_DEG, degrees=True).as_matrix()
+    rr.log("rig/mesh", rr.Transform3D(mat3x3=R, translation=ROBOCAP_MESH_TRANSLATION), static=True)
+    rr.log("rig/mesh", rr.Asset3D(path=mesh_path), static=True)
 
 
 def log_final_landmarks(tracker: cuvslam.Tracker) -> None:

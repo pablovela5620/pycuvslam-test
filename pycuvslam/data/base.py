@@ -69,3 +69,8 @@ class BaseTrackDataset(ABC):
     def image_plane_distance(self) -> float:
         """Distance for Rerun frustum visualization."""
         ...
+
+    @property
+    def mesh_path(self) -> Path | None:
+        """Optional path to a 3D mesh representing the capture rig."""
+        return None

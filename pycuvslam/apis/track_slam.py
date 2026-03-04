@@ -12,7 +12,7 @@ from tqdm.auto import tqdm
 
 from pycuvslam.configs.track_dataset_configs import AnnotatedTrackDatasetUnion
 from pycuvslam.data.base import BaseTrackDataset
-from pycuvslam.visualization import log_final_landmarks, log_frame_visuals, log_static_cameras_and_videos
+from pycuvslam.visualization import log_final_landmarks, log_frame_visuals, log_rig_mesh, log_static_cameras_and_videos
 
 
 @dataclass
@@ -70,6 +70,7 @@ def main(config: TrackSlamConfig) -> None:
     )
     rr.log("/", rr.ViewCoordinates.LFD, static=True)
     log_static_cameras_and_videos(dataset, timeline="video_time")
+    log_rig_mesh(dataset.mesh_path)
 
     # Tracking loop
     odom_trajectory: list[Float32[np.ndarray, "3"]] = []
