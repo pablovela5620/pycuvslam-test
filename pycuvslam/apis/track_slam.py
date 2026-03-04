@@ -6,7 +6,7 @@ import cuvslam
 import numpy as np
 import rerun as rr
 import rerun.blueprint as rrb
-from jaxtyping import Float32, UInt8
+from jaxtyping import Float32, Float64, UInt8
 from scipy.spatial.transform import Rotation
 from simplecv.rerun_log_utils import RerunTyroConfig
 from tqdm.auto import tqdm
@@ -86,7 +86,7 @@ def main(config: TrackSlamConfig) -> None:
     odom_trajectory: list[Float32[np.ndarray, "3"]] = []
     slam_trajectory: list[Float32[np.ndarray, "3"]] = []
     loop_closure_points: list[Float32[np.ndarray, "3"]] = []
-    world_from_rig_matrices: list[Float32[np.ndarray, "4 4"]] = []
+    world_from_rig_matrices: list[Float64[np.ndarray, "4 4"]] = []
     prev_lc_count: int = 0
     n_cameras: int = len(dataset.cameras)
     rig_from_cam: np.ndarray | None = None

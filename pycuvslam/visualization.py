@@ -5,6 +5,7 @@ from pathlib import Path
 import cuvslam
 import numpy as np
 import rerun as rr
+from jaxtyping import Float64
 from numpy import ndarray
 from scipy.spatial.transform import Rotation
 from simplecv.camera_orient_utils import auto_orient_and_center_poses
@@ -28,10 +29,10 @@ def color_from_id(identifier: int) -> list[int]:
 
 
 def compute_orient_transform(
-    world_from_rig_matrices: list[ndarray],
-    rig_from_cam: ndarray,
+    world_from_rig_matrices: list[Float64[ndarray, "4 4"]],
+    rig_from_cam: Float64[ndarray, "4 4"],
     center: bool = True,
-) -> tuple[ndarray, ndarray] | None:
+) -> tuple[Float64[ndarray, "3 3"], Float64[ndarray, "3"]] | None:
     """Compute gravity-alignment transform from collected poses.
 
     Args:
@@ -60,7 +61,7 @@ def compute_orient_transform(
     return R, t
 
 
-def log_orient_transform(R: ndarray, t: ndarray) -> None:
+def log_orient_transform(R: Float64[ndarray, "3 3"], t: Float64[ndarray, "3"]) -> None:
     """Log the gravity-alignment transform as a static Transform3D on 'world'.
 
     Also updates root ViewCoordinates to RFU (Z-up) to match auto_orient's output,
