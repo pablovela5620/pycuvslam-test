@@ -68,7 +68,6 @@ def main(config: TrackSlamConfig) -> None:
     ]
     rr.send_blueprint(
         rrb.Blueprint(
-            rrb.TimePanel(state="collapsed"),
             rrb.Vertical(
                 contents=[
                     rrb.Horizontal(contents=cam_views),
@@ -82,8 +81,10 @@ def main(config: TrackSlamConfig) -> None:
                         eye_controls=rrb.EyeControls3D(spin_speed=0.25),
                     ),
                     rrb.TextLogView(name="SLAM Metrics", origin="slam_metrics"),
-                ]
+                ],
+                row_shares=[2, 5, 1],
             ),
+            collapse_panels=True,
         )
     )
     rr.log("/", rr.ViewCoordinates.LFD, static=True)
