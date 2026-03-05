@@ -58,19 +58,25 @@ def main(config: TrackOdometryConfig) -> None:
     print(f"Tracker initialized (mode={tracker_cfg.odometry_mode}, slam=disabled)")
 
     # Set up Rerun blueprint
-    cam_views = [
-        rrb.Spatial2DView(origin=f"world/rig/cam{i}/pinhole", name=name)
-        for i, name in enumerate(dataset.cam_names)
-    ]
+    cam_views = [rrb.Spatial2DView(origin=f"world/rig/cam{i}/pinhole", name=name) for i, name in enumerate(dataset.cam_names)]
     rr.send_blueprint(
         rrb.Blueprint(
-            rrb.TimePanel(state="collapsed"),
             rrb.Vertical(
                 contents=[
                     rrb.Horizontal(contents=cam_views),
-                    rrb.Spatial3DView(name="3D"),
-                ]
+                    rrb.Spatial3DView(
+                        name="3D",
+                        contents=[
+                            "+ /**",
+                            "- /world/rig/landmarks",
+                            "- /world/final_landmarks",
+                        ],
+                        eye_controls=rrb.EyeControls3D(spin_speed=0.25),
+                    ),
+                ],
+                row_shares=[2, 5],
             ),
+            collapse_panels=True,
         )
     )
     rr.log("/", rr.ViewCoordinates.LFD, static=True)
@@ -83,7 +89,7 @@ def main(config: TrackOdometryConfig) -> None:
     n_cameras: int = len(dataset.cameras)
     rig_from_cam: np.ndarray | None = None
     if config.auto_orient:
-        first_cam_name = dataset.cam_names[0]
+        first_cam_name: str = dataset.cam_names[0]
         rig_from_cam = dataset.cam_params[first_cam_name].extrinsics.world_T_cam
 
     for frame_idx in tqdm(range(dataset.n_frames), desc="Tracking"):
