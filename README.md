@@ -1,6 +1,41 @@
 # pycuvslam-test
+Multicamera visual odometry and SLAM using [NVIDIA cuVSLAM](https://github.com/NVlabs/PyCuVSLAM), with [Rerun](https://rerun.io) visualization. Uses **Rerun** for 3D inspection, **tyro** for the CLI, and **Pixi** for one-command setup.
 
-Multicamera visual odometry and SLAM using [NVIDIA cuVSLAM](https://github.com/NVlabs/PyCuVSLAM), with [Rerun](https://rerun.io) visualization. Refactored from standalone scripts into a typed Python package with a dataset abstraction, tyro-based CLI, and optimized video logging.
+<p align="center">
+  <a title="Rerun" href="https://rerun.io" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/Rerun-0.28%2B-0b82f9" alt="Rerun badge">
+  </a>
+  <a title="Pixi" href="https://pixi.sh/latest/" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/Install%20with-Pixi-16A34A" alt="Pixi badge">
+  </a>
+  <a title="CUDA" href="https://developer.nvidia.com/cuda-toolkit" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/CUDA-12.x-76b900" alt="CUDA badge">
+  </a>
+</p>
+
+<p align="center">
+  <img src="media/github.gif" alt="pycuvslam demo" width="720" />
+</p>
+
+## Installation
+
+Make sure you have the [Pixi](https://pixi.sh/latest/#installation) package manager installed.
+
+TL;DR install Pixi:
+```bash
+curl -fsSL https://pixi.sh/install.sh | sh
+```
+Restart your shell so the new `pixi` binary is on `PATH`.
+
+This is Linux only with an NVIDIA GPU.
+
+```bash
+git clone https://github.com/pablovela5620/pycuvslam-test.git
+cd pycuvslam-test
+pixi run track-robocap
+```
+
+All commands can be listed with `pixi task list`.
 
 ## Project structure
 
@@ -26,24 +61,6 @@ pycuvslam-test/
     ├── track_robocap.py                    # Original per-frame Image approach
     └── robocap_utils.py                    # Shared utils for legacy scripts
 ```
-
-## Setup
-
-Requires [pixi](https://prefix.dev/docs/pixi/overview) for dependency management.
-
-```bash
-pixi install          # Install default environment
-pixi install -e dev   # Install dev environment (adds beartype, ruff)
-```
-
-Two environments are available:
-
-| Environment | Purpose | Extras |
-|---|---|---|
-| `default` | Running pipelines | cuVSLAM, Rerun, simplecv, tyro |
-| `dev` | Development | + beartype (runtime type checking), ruff (linting) |
-
-beartype activates automatically when `PIXI_ENVIRONMENT_NAME=dev` (set by pixi). No decorators needed -- `beartype_this_package()` in `pycuvslam/__init__.py` instruments the entire package via AST import hooks.
 
 ## Usage
 
