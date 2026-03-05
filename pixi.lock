@@ -938,6 +938,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/linux-64/pyarrow-20.0.0-py310hff52083_2.conda
       - conda: https://prefix.dev/conda-forge/linux-64/pyarrow-core-20.0.0-py310h923f568_2_cpu.conda
       - conda: https://prefix.dev/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/linux-64/pyrefly-0.54.0-h2b88eb6_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/pyserde-0.30.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/linux-64/python-3.10.19-h3c07f61_3_cpython.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.10-8_cp310.conda
@@ -1278,6 +1279,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/linux-aarch64/pyarrow-20.0.0-py310hbbe02a8_2.conda
       - conda: https://prefix.dev/conda-forge/linux-aarch64/pyarrow-core-20.0.0-py310h27f34b2_2_cpu.conda
       - conda: https://prefix.dev/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
+      - conda: https://prefix.dev/conda-forge/linux-aarch64/pyrefly-0.54.0-h7baeb35_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/pyserde-0.30.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/linux-aarch64/python-3.10.19-h28be5d3_3_cpython.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.10-8_cp310.conda
@@ -7902,7 +7904,7 @@ packages:
 - pypi: ./
   name: pycuvslam
   version: 0.1.0
-  sha256: c9acc9ce4afcc715bd8deb6846da0c6e873a6c926eb0a42b38fd243818de8e4c
+  sha256: a9ce0abc5bebd6e86203982b49dac6f60d7de2dd7a3da303d493ba5f5c9d37dd
 - conda: https://prefix.dev/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
   sha256: 5577623b9f6685ece2697c6eb7511b4c9ac5fb607c9babc2646c811b428fd46a
   md5: 6b6ece66ebcae2d5f326c77ef2c5a066
@@ -7922,6 +7924,31 @@ packages:
   - railroad-diagrams ; extra == 'diagrams'
   - jinja2 ; extra == 'diagrams'
   requires_python: '>=3.9'
+- conda: https://prefix.dev/conda-forge/linux-64/pyrefly-0.54.0-h2b88eb6_0.conda
+  sha256: 4267dd44743599065f1873c80934bfc317b8d04f2b95f1baf44ef66a9ce512bd
+  md5: 7f95d01fd5038b93f1255920565cd6ce
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  purls: []
+  size: 10303573
+  timestamp: 1771973286094
+- conda: https://prefix.dev/conda-forge/linux-aarch64/pyrefly-0.54.0-h7baeb35_0.conda
+  sha256: 3defd96d5999aa939aba7d118205975268434ddc13aa764b9e9c0577153c6401
+  md5: c787d68ea0f0fee3cf40419d9a4dbf7c
+  depends:
+  - libgcc >=14
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  purls: []
+  size: 10052635
+  timestamp: 1771973319427
 - conda: https://prefix.dev/conda-forge/noarch/pyserde-0.30.1-pyhcf101f3_0.conda
   sha256: c6d1aa2a685277732dbbb858537b5b9c4ae6559fcdcc9a6ec54f846788e7479a
   md5: 93cd6487e793d0fc9139340e2f489e77
